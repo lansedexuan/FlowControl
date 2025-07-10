@@ -13,7 +13,7 @@ from flow.utils.registry import make_create_env
 # Experiment parameters
 N_ROLLOUTS = 18  # number of rollouts per training iteration
 N_CPUS = 18  # number of parallel workers
-HORIZON = 900  # time horizon of a single rollout
+HORIZON = 720  # time horizon of a single rollout
 
 SPEED_LIMIT = 15
 MAX_ACCEL = 3  # maximum acceleration for autonomous vehicles, in m/s^2
@@ -24,7 +24,7 @@ ABS_DIR = os.getcwd().split('flow')[0]
 vehicles = VehicleParams()
 
 flow_params = dict(
-    exp_tag='1km_CoTV',
+    exp_tag='Dub_CoTV',
 
     env_name=CoTVCustomEnv,
 
@@ -36,7 +36,7 @@ flow_params = dict(
         render=False,
         sim_step=1,
         restart_instance=True,
-        emission_path="{}output/1km_CoTV".format(ABS_DIR)
+        emission_path="{}output/Dub_CoTV".format(ABS_DIR)
     ),
 
     env=EnvParams(
@@ -49,15 +49,16 @@ flow_params = dict(
             "max_decel": MAX_ACCEL,
             "safety_device": True,  # 'True' needs emission path to save output file
             "cav_penetration_rate": 1,  # used for CoTVMixedCustomEnv
-            "total_veh": 321
+            "total_veh": 275
         },
     ),
 
     net=NetParams(
         template={
-            "net": "{}/scenarios/CoTV/selected1km/selected1km.net.xml".format(ABS_DIR),
-            "rou": "{}/scenarios/CoTV/selected1km/selected1km_rl.rou.xml".format(ABS_DIR),
-            "vtype": "{}/scenarios/CoTV/selected1km/rl_vtypes.add.xml".format(ABS_DIR)}
+            "net": "{}/scenarios/CoTV/Dublin/selected.net.xml".format(ABS_DIR),
+            "rou": "{}/scenarios/CoTV/Dublin/dublin_clip_rl.rou.xml".format(ABS_DIR),
+            "vtype": "{}/scenarios/CoTV/Dublin/rl_vtypes.add.xml".format(ABS_DIR)}
+        
     ),
 
     veh=vehicles

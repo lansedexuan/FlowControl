@@ -5,5 +5,6 @@
 	
 	<vType id="HDC" vClass="passenger" tau="1.2" lcStrategic="0.5" probability="1" accel="2.5" decel="7.5" sigma="0.5" minGap="2.5" maxSpeed="15" speedFactor="1.0" speedDev="0.1" impatience="0.5" carFollowModel="Krauss" laneChangeModel="LC2013" lcCooperative="1.0" lcSpeedGain="1.0" lcKeepRight="1.0"/>
 
+	<vType id="EV" vClass="emergency" length="5.0" maxSpeed="30.0" accel="2.0" decel="4.5" color="red" laneChangeModel="LC2013" sigma="0.1" /><!-- 声明为紧急车辆类型 -->
 	
 </additional>

@@ -37,7 +37,7 @@ ADDITIONAL_ENV_PARAMS_CAVTL = {
     "max_decel": 1,
 }
 
-
+#dublin
 class CoTVCustomEnv(MultiEnv):
     """
         To adopt network from sumo
@@ -46,61 +46,72 @@ class CoTVCustomEnv(MultiEnv):
     def __init__(self, env_params, sim_params, network, simulator='traci'):
         super().__init__(env_params, sim_params, network, simulator)
 
+        #检查环境参数完整性
         for p in ADDITIONAL_ENV_PARAMS_CAVTL.keys():
             if p not in env_params.additional_params:
                 raise KeyError(
                     'Environment parameter "{}" not supplied'.format(p))
 
-        # network, edge
+        # network, edge初始化
         self.mapping_inc, self.num_local_edges_max, self.mapping_out, self.num_out_edges_max = network.node_mapping
         self.lanes_related = []
         for each in self.mapping_inc.values():
             self.lanes_related.extend(each)
         for each in self.mapping_out.values():
             self.lanes_related.extend(each)
-        # traffic light
+
+        # traffic light初始化
         self.states_tl = network.get_states()
         self.num_traffic_lights = len(self.mapping_inc.keys())
         self.last_changes = [0.00] * self.num_traffic_lights
         self.currently_yellows = [0] * self.num_traffic_lights
-        # vehicle
+
+        # vehicle初始化
         self.observation_info = {}
         self.leader = []
-        # vehs list for the edges around intersections in the network
+        # vehs list for the edges around intersections in the network 路口的车辆
         self.vehs_edges = {i: {} for i in self.lanes_related}
-        # used during visualization
+        # used during visualization 可视化用到的车辆id列表
         self.observed_ids = []
-        # exp setting
+
+        # exp setting 实验参数设置
         self.num_observed = env_params.additional_params.get("num_observed", 1)
         self.min_switch_time = env_params.additional_params["switch_time"]
         self.target_speed = env_params.additional_params.get("target_velocity", 15)
 
+        # 新增：信号灯切换惩罚相关
+        self.last_tl_actions = {tl_id: 0 for tl_id in self.k.traffic_light.get_ids()}
+        self.switch_penalty_factor = 0.07  # 可调整参数
+        self.light_count=0
+        self.vehicle_count=0
+
     @property
     def action_space_tl(self):
-        return Discrete(2)
+        return Discrete(2)#信号灯空间 2种离散动作
 
     @property
     def action_space_av(self):
         return Box(low=-abs(self.env_params.additional_params["max_decel"]),
-                   high=self.env_params.additional_params["max_accel"], shape=(1,))
+                   high=self.env_params.additional_params["max_accel"], shape=(1,))#车辆加速度连续空间
 
     @property
     def observation_space_tl(self):
         return Box(low=0., high=1, shape=(4 * self.num_local_edges_max * self.num_observed +
-                                          self.num_local_edges_max + self.num_out_edges_max + 3,))
+                                          self.num_local_edges_max + self.num_out_edges_max + 3,))#信号灯观测空间
 
     @property
     def observation_space_av(self):
-        return Box(low=-5, high=5, shape=(9,))
+        return Box(low=-5, high=5, shape=(9,))#车辆观测空间
 
-    def full_name_edge_lane(self, veh_id):
+    def full_name_edge_lane(self, veh_id):#获取车辆所在的道路完整名称
         edge_id = self.k.vehicle.get_edge(veh_id)
         lane_id = self.k.vehicle.get_lane(veh_id)
         return edge_id + '_' + str(lane_id)
 
     def convert_edge_into_num(self, edge_id):
-        return self.lanes_related.index(edge_id) + 1
+        return self.lanes_related.index(edge_id) + 1 #将id转换为索引编号
 
+    #获取车辆标准化状态信息
     def get_observed_info_veh(self, veh_id, max_speed, max_length, accel_norm):
         speed_veh = self.k.vehicle.get_speed(veh_id) / max_speed
         accel_veh = self.k.vehicle.get_realized_accel(veh_id)
@@ -109,18 +120,19 @@ class CoTVCustomEnv(MultiEnv):
         edge_veh = self.convert_edge_into_num(self.full_name_edge_lane(veh_id)) / len(self.lanes_related)
         # 0: no road to form a 4-leg intersection
 
-        # accel normalization
+        # 加速度归一化
         if accel_veh < -15:
             accel_veh = -15
         accel_veh = (accel_veh + 15) / accel_norm
         return [speed_veh, accel_veh, dis_veh, edge_veh]
+
 
     def get_state(self):
 
         obs = {}
         self.leader = []
 
-        # normalizing constants
+        # normalizing constants 归一化系数
         max_speed = self.k.network.max_speed()
         edge_length = []
         edge_length.extend([self.k.network.edge_length(edge) for edge in self.k.network.get_edge_list()])
@@ -130,40 +142,45 @@ class CoTVCustomEnv(MultiEnv):
         max_decel = 15  # emergence stop
         accel_norm = max_accel + max_decel
 
+        #按车道分组车辆
         veh_lane_pair = {each: [] for each in self.vehs_edges.keys()}
         for each_veh in self.k.vehicle.get_ids():
             # skip the internal links in intersections
             if self.full_name_edge_lane(each_veh) in self.lanes_related:
                 veh_lane_pair[self.full_name_edge_lane(each_veh)].append(each_veh)
-        # vehicles for incoming and outgoing - info map
+
+        # 计算归一化后进出车辆
         w_max = max_length / 7.5  # normalization for vehicle number, length + min gap
         veh_num_per_edge = {}  # key: name of each edge in the road network
         for each in self.vehs_edges.keys():
             all_vehs = veh_lane_pair[each]
             # remove vehicles already left the edge after one step, not restore at this step
+            # 移除已离开边缘的车辆
             pre_observed_vehs = list(self.vehs_edges[each].keys())
             for each_veh in pre_observed_vehs:
                 if each_veh not in all_vehs:
                     del self.vehs_edges[each][each_veh]
             # update at this step
+            #更新当前边缘的车辆
             for veh in all_vehs:
                 self.vehs_edges[each].update({veh: self.get_observed_info_veh(veh, max_speed, max_length, accel_norm)})
             veh_num_per_edge.update({each: len(self.vehs_edges[each].keys()) / w_max})
 
-        # Observed vehicle information
+        # Observed vehicle information 车辆信息
         speeds = []
         accels = []
         dist_to_intersec = []
         edge_number = []
         all_observed_ids = []
-        # Traffic light information
+
+        # Traffic light information 交通灯信息
         for tl_id, edges in self.mapping_inc.items():  # each intersection
             local_speeds = []
             local_accels = []
             local_dists_to_intersec = []
             local_edge_numbers = []
             for edge in edges:
-                # sort to select the closest vehicle
+                # sort to select the closest vehicle 按距离排序选择最近的车辆
                 veh_id_sort = {}
                 for veh in self.vehs_edges[edge].keys():
                     veh_id_sort.update({self.vehs_edges[edge][veh][2]: veh})  # closer: larger position
@@ -171,11 +188,13 @@ class CoTVCustomEnv(MultiEnv):
                 observed_ids = [veh_id_sort[sorted(veh_id_sort.keys())[i]] for i in range(0, num_observed)]
                 all_observed_ids.extend(observed_ids)
 
+                #提取观测车辆的状态
                 local_speeds.extend([self.vehs_edges[edge][veh_id][0] for veh_id in observed_ids])
                 local_accels.extend([self.vehs_edges[edge][veh_id][1] for veh_id in observed_ids])
                 local_dists_to_intersec.extend([self.vehs_edges[edge][veh_id][2] for veh_id in observed_ids])
                 local_edge_numbers.extend([self.vehs_edges[edge][veh_id][3] for veh_id in observed_ids])
 
+                #补全缺失的观测值（当车辆数量不足时）
                 if len(observed_ids) < self.num_observed:
                     diff = self.num_observed - len(observed_ids)
                     local_speeds.extend([1] * diff)
@@ -183,7 +202,7 @@ class CoTVCustomEnv(MultiEnv):
                     local_dists_to_intersec.extend([1] * diff)
                     local_edge_numbers.extend([0] * diff)
 
-            # not 4-leg intersection
+            # not 4-leg intersection 补全非四向路口的缺失维度
             if len(edges) < self.num_local_edges_max:
                 diff = self.num_local_edges_max - len(edges)
                 local_speeds.extend([1] * diff * self.num_observed)
@@ -197,7 +216,7 @@ class CoTVCustomEnv(MultiEnv):
             edge_number.append(local_edge_numbers)
         self.observed_ids = all_observed_ids
 
-        # the incoming TL for each AV
+        # the incoming TL for each AV 关联车辆将要遇到的信号灯
         incoming_tl = {each: "" for each in self.observed_ids}
 
         # Traffic light information
@@ -206,6 +225,7 @@ class CoTVCustomEnv(MultiEnv):
             local_edges = self.mapping_inc[tl_id]
             local_edges_out = self.mapping_out[tl_id]
 
+            #计算进入和离开的车辆数量
             veh_num_per_in = [veh_num_per_edge[each] for each in local_edges]
             veh_num_per_out = [veh_num_per_edge[each] for each in local_edges_out]
             # not 4-leg intersection
@@ -216,31 +236,34 @@ class CoTVCustomEnv(MultiEnv):
                 diff = self.num_out_edges_max - len(local_edges_out)
                 veh_num_per_out.extend([0] * diff)
 
+            #确定每辆车对应的信号灯
             for cav_id in incoming_tl.keys():
                 if self.full_name_edge_lane(cav_id) in local_edges:
                     incoming_tl[cav_id] = tl_id_num  # get the id of the approaching TL
 
+            #构建信号灯的观测状态
             states = self.states_tl[tl_id]
             now_state = self.k.traffic_light.get_state(tl_id)
             state_index = states.index(now_state)
 
+            #拼接多维度观测特征
             con = [round(i, 8) for i in np.concatenate(
                 [speeds[tl_id_num], accels[tl_id_num], dist_to_intersec[tl_id_num],
                  edge_number[tl_id_num],
                  veh_num_per_in, veh_num_per_out,
                  [self.last_changes[tl_id_num] / 3],
                  [state_index / len(states)], [self.currently_yellows[tl_id_num]]])]
-
             observation = np.array(con)
             obs.update({tl_id: observation})
 
             # This is a catch-all for when the relative_node method returns a -1
             # (when there is no node in the direction sought). We add a last
             # item to the lists here, which will serve as a default value.
+            #初始化新信号灯的状态记录
             self.last_changes.append(0)
             self.currently_yellows.append(1)  # if there is no traffic light
 
-        # agent_CAV information
+        # agent_CAV information 自驾汽车观测状态
         for rl_id in self.observed_ids:
             this_pos = self.k.network.edge_length(self.k.vehicle.get_edge(rl_id)) - self.k.vehicle.get_position(
                 rl_id)
@@ -249,6 +272,7 @@ class CoTVCustomEnv(MultiEnv):
             this_accel = (this_accel, -15)[abs(this_accel) >= 15]
             lead_id = self.k.vehicle.get_leader(rl_id)
 
+            #获取车辆对应的信号灯信息
             this_tl_name = ""
             if incoming_tl[rl_id] != "":
                 incoming_tl_id = int(incoming_tl[rl_id])
@@ -256,6 +280,7 @@ class CoTVCustomEnv(MultiEnv):
             else:
                 incoming_tl_id = -1  # set default value
 
+            #处理信号灯状态
             if this_tl_name:
                 states = self.states_tl[this_tl_name]
                 now_state = self.k.traffic_light.get_state(this_tl_name)
@@ -269,6 +294,7 @@ class CoTVCustomEnv(MultiEnv):
             else:
                 state_norm = 0
 
+            #处理前车信息
             if lead_id in ["", None] or self.k.vehicle.get_speed(lead_id) == -1001:
                 # in case leader is not visible
                 lead_speed = max_speed + this_speed
@@ -281,11 +307,13 @@ class CoTVCustomEnv(MultiEnv):
                 lead_accel = self.k.vehicle.get_realized_accel(lead_id)
                 lead_accel = (lead_accel, -15)[abs(lead_accel) >= 15]
 
+            #标准化前车距离
             if lead_head / max_length > 5:
                 lead_head = 5 * max_length
             elif lead_head / max_length < -5:
                 lead_head = -5 * max_length
 
+            #拼接车辆观测矩阵
             obs.update({rl_id: np.array([
                 this_pos / max_length,
                 this_speed / max_speed,
@@ -298,7 +326,7 @@ class CoTVCustomEnv(MultiEnv):
 
         self.observation_info = obs
         return obs
-
+    '''
     def compute_reward(self, rl_actions, **kwargs):
         if rl_actions is None:
             return {}
@@ -306,7 +334,7 @@ class CoTVCustomEnv(MultiEnv):
         reward = {}
         for rl_id in self.k.traffic_light.get_ids():
             obs = self.observation_info[rl_id]
-            # pressure
+            # pressure 入口流量 - 出口流量
             traffic_start = 4 * self.num_local_edges_max * self.num_observed
             inc_traffic = np.sum(obs[traffic_start: traffic_start + self.num_local_edges_max])
             out_traffic = np.sum(obs[traffic_start + self.num_local_edges_max:
@@ -316,19 +344,145 @@ class CoTVCustomEnv(MultiEnv):
         for rl_id in self.observed_ids:
             edge_id = self.full_name_edge_lane(rl_id)
             veh_ids = list(self.vehs_edges[edge_id].keys())
+            #最大化接近目标速度 最小化加速度变化
             reward[rl_id] = rewards.min_delay_edge(self, veh_ids, self.target_speed) - 1 \
                 - rewards.stable_acceleration_positive_edge(self, veh_ids)
 
         return reward
+    '''
+
+    def compute_reward(self, rl_actions, **kwargs):
+        if rl_actions is None:
+            return {}
+
+        reward = {}
+
+        # 初始化上次动作记录（首次调用时）
+        if not hasattr(self, 'last_tl_actions'):
+            self.last_tl_actions = {tl_id: 0 for tl_id in self.k.traffic_light.get_ids()}
+
+        for rl_id in self.k.traffic_light.get_ids():
+            obs = self.observation_info[rl_id]
+            # pressure 入口流量 - 出口流量
+            traffic_start = 4 * self.num_local_edges_max * self.num_observed
+            inc_traffic = np.sum(obs[traffic_start: traffic_start + self.num_local_edges_max])
+            out_traffic = np.sum(obs[traffic_start + self.num_local_edges_max:
+                                     traffic_start + self.num_local_edges_max + self.num_out_edges_max])
+            pressure = inc_traffic - out_traffic
+
+            # 新增：信号灯切换惩罚
+            current_action = rl_actions.get(rl_id, 0) > 0.0
+            switch_penalty = self.switch_penalty_factor if current_action != self.last_tl_actions[rl_id] else 0
+            # 在奖励函数中使用动态惩罚
+            #switch_penalty = self.get_switch_penalty(rl_id) if current_action != self.last_tl_actions[rl_id] else 0
+            self.last_tl_actions[rl_id] = current_action
+
+            #奖励计算
+            reward[rl_id] = -pressure #- switch_penalty  #惩罚 压力 信号切换 时间
+
+            self.light_count += 1
+            if self.light_count == 3000:
+                # ===== 新增：打印交通灯奖励分量 =====
+                print(f"1 [TL {rl_id}] Pressure: {pressure:.4f}, Switch Penalty: {switch_penalty:.4f}")
+                print(f"1 [TL {rl_id}] Final Reward: {reward[rl_id]:.4f}")
+                print("-" * 40)
+                self.light_count = 0
+
+        for rl_id in self.observed_ids:
+            edge_id = self.full_name_edge_lane(rl_id)
+            veh_ids = list(self.vehs_edges[edge_id].keys())
+
+            # 计算头部车辆的延迟奖励
+            delay_reward = rewards.min_delay_edge(self, veh_ids, self.target_speed) - 1
+
+            # 计算头部车辆的加速度惩罚
+            accel_penalty = rewards.stable_acceleration_positive_edge(self, veh_ids)
+
+            # 新增：碰撞风险惩罚
+            collision_penalty = 0.0
+            #headway_penalty = 0.0  # 初始化距离惩罚为0
+            #ttc_penalty = 0.0  # 初始化TTC惩罚为0
+            lead_id = self.k.vehicle.get_leader(rl_id)
+            '''
+            #原代码
+            if lead_id and lead_id != rl_id:
+                headway = self.k.vehicle.get_headway(rl_id)
+                # 碰撞惩罚优化（原平方项改为指数项）
+                if headway < 2.0:
+                    headway = max(headway, 0.1)
+                    # 原公式：0.1 * (2.0 - headway) ** 2
+                    # 新公式：0.2 * (1 - np.exp(-(2.0 - headway) * 2))
+                    collision_penalty += 0.2 * (1 - np.exp(-(2.0 - headway) * 2))
+            '''
+            # 优化为
+            if lead_id and lead_id != rl_id:
+                headway = self.k.vehicle.get_headway(rl_id)
+                ego_speed = self.k.vehicle.get_speed(rl_id)
+                lead_speed = self.k.vehicle.get_speed(lead_id)
+                # 计算理论安全距离（反应距离 + 制动距离）
+                # 假设反应时间为1秒，减速度为3m/s²（通用安全标准）
+                safe_distance = max(1.0, ego_speed * 1.0 + (ego_speed ** 2) / (2 * 3.0))
+                # 计算相对速度（负值表示接近）
+                rel_speed = lead_speed - ego_speed
+                #ttc = headway / max(0.1, abs(rel_speed)) if rel_speed <= 0 else float('inf')
+
+                # 风险评估：结合安全距离和相对速度
+                # 当实际距离 < 安全距离 或 相对速度为负（正在接近）时，计算风险
+                if headway < safe_distance or rel_speed < 0:
+                    # 计算TTC（碰撞时间），避免除以零
+                    ttc = headway / max(0.1, abs(rel_speed)) if rel_speed <= 0 else float('inf')
+
+                    # 归一化风险分数：距离越近、TTC越小，风险越高
+                    distance_risk = 1 - min(headway / safe_distance, 1.0)  # [0,1]
+                    ttc_risk = 1 - np.exp(-ttc)  # [0,1]，TTC越小风险越高
+
+                    # 综合风险：同时考虑距离和TTC
+                    combined_risk = max(distance_risk, ttc_risk)
+
+                    # 平滑惩罚：使用指数函数放大高风险区域
+                    # 改进：移除了多个超参数，仅保留指数底数2（对结果影响较小）
+                    collision_penalty = 1.0 - np.exp(-2 * combined_risk)  # [0,1]
+
+            # 计算速度匹配奖励（越接近target_speed奖励越高）
+            current_speed = self.k.vehicle.get_speed(rl_id)
+            speed_diff = abs(current_speed - self.target_speed)
+            speed_reward = -speed_diff / self.target_speed  # 标准化到[-1, 0]
+
+            #最大化接近目标速度 最小化加速度变化
+            # 改进：简化了奖励计算，移除了headway_penalty和ttc_penalty的单独计算
+            reward[rl_id] = delay_reward - accel_penalty - collision_penalty + speed_reward
+            #reward[rl_id] = delay_reward - accel_penalty - collision_penalty + speed_reward
+
+            #最大化接近目标速度 最小化加速度变化
+            #reward[rl_id] = delay_reward - accel_penalty
+            #reward[rl_id] = rewards.min_delay_edge(self, veh_ids, self.target_speed) - 1 \
+            #   - rewards.stable_acceleration_positive_edge(self, veh_ids)
+
+            self.vehicle_count+=1
+            if self.vehicle_count==3000:
+                # ===== 新增：打印CAV奖励分量 =====
+                print(f"2 [CAV {rl_id}] Delay Reward: {delay_reward:.4f}, Accel Reward: {accel_penalty:.4f}")
+                print(f"2 [CAV {rl_id}] HeadwayPen: {collision_penalty:.4f}, TTCPen: {speed_reward:.4f}")
+                print(f"2 [CAV {rl_id}] Final Reward: {reward[rl_id]:.4f}")
+                print("-" * 40)
+                self.vehicle_count=0
+
+        return reward
+
+
+
+
+    ###########################################################################
 
     def _apply_rl_actions(self, rl_actions):
         for rl_id, rl_action in rl_actions.items():
             if rl_id in self.mapping_inc.keys():
+                #信号灯动作
                 tl_id_num = list(self.mapping_inc.keys()).index(rl_id)
 
                 # convert values less than 0.0 to zero and above to 1. 0's
                 # indicate that we should not switch the direction
-                action = rl_action > 0.0
+                action = rl_action > 0.0 #将数值动作转换为布尔值
 
                 states = self.states_tl[rl_id]
                 now_state = self.k.traffic_light.get_state(rl_id)
@@ -1531,4 +1685,3 @@ class CoTVNOCoorCustomEnv(MultiEnv):
             self.k.vehicle.set_color(veh_id=veh_id, color=(255, 255, 255))
         for veh_id in self.observed_ids:
             self.k.vehicle.set_color(veh_id=veh_id, color=(255, 0, 0))
-

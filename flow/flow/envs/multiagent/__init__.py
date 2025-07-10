@@ -11,6 +11,7 @@ from flow.envs.multiagent.ring.accel import FlowCAV
 from flow.envs.multiagent.traffic_light_grid import MultiTrafficLightGridPOEnv
 from flow.envs.multiagent.traffic_light_grid import PressLight
 from flow.envs.multiagent.traffic_light_grid import CoTVAll, CoTV, CoTVNOCoord
+from flow.envs.multiagent.traffic_light_grid_ts import CoTVTS
 from flow.envs.multiagent.highway import MultiAgentHighwayPOEnv
 from flow.envs.multiagent.merge import MultiAgentMergePOEnv
 from flow.envs.multiagent.i210 import I210MultiEnv
@@ -39,5 +40,6 @@ __all__ = [
     'CoTVAllCustomEnv',
     'CoTVCustomEnv',
     'CoTVMixedCustomEnv',
-    'CoTVNOCoorCustomEnv'
+    'CoTVNOCoorCustomEnv',
+    'CoTVTS'
 ]
