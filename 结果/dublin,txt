@@ -1,0 +1,57 @@
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen Dub_CoTV --output_dir output
+Evaluated files: ['Dub_CoTV_20250626-1848221750934902.9246137-3-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934902.5453866-8-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934903.003538-4-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934902.875387-2-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934902.9246137-2-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934902.8650248-1-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934902.9299338-3-tripinfo.xml', 'Dub_CoTV_20250626-1848221750934902.8897285-1-tripinfo.xml']
+
+---------
+Dub_CoTV
+Average finished trip number in this scenario:  274.875
+Average vehicle trip length (m):  454.202437471578
+fuel: avg-7.852294494376584, med-7.887930529941815, std-0.09461460454788855
+CO2: avg-182.67053537503074, med-183.49958401395938, std-2.201032391032998
+delay: avg-11.806695164468698, med-11.708013945732908, std-0.3686486468434491
+duration: avg-42.0868576625739, med-41.98817644383811, std-0.3686486468437209
+TTC: [230, 279, 246, 249, 214, 236, 281, 177]
+Average TTC number < 3.0 sec: 239.000000
+
+Main traffic statistics:
+     Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time      Delay    TTC
+0  (Dub_CoTV)                  7.852294          182.670535            42.086858  11.806695  239.0
+Statistics of travel time (sec)
+         Dub_CoTV
+count  275.000000
+mean    42.154286
+std     40.066473
+min      1.000000
+25%     19.125000
+50%     28.625000
+75%     44.000000
+max    193.000000
+
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen Dub_CoTV --output_dir output
+Evaluated files: ['Dub_CoTV_20250707-2107501751893670.3750777-7-tripinfo.xml', 'Dub_CoTV_20250707-2107491751893669.955831-6-tripinfo.xml', 'Dub_CoTV_20250707-2107491751893669.9716992-7-tripinfo.xml', 'Dub_CoTV_20250707-2107501751893670.1357543-1-tripinfo.xml', 'Dub_CoTV_20250707-2107501751893670.522415-8-tripinfo.xml', 'Dub_CoTV_20250707-2107501751893670.0325015-9-tripinfo.xml', 'Dub_CoTV_20250707-2107501751893670.243364-9-tripinfo.xml', 'Dub_CoTV_20250707-2107501751893670.1052094-1-tripinfo.xml']
+
+---------
+Dub_CoTV
+Average finished trip number in this scenario:  275.0
+Average vehicle trip length (m):  454.26635
+fuel: avg-7.905644572036566, med-7.949626638044551, std-0.13671113244952457
+CO2: avg-183.91153265645409, med-184.9346710503411, std-3.180345587062823
+delay: avg-12.235576666666669, med-12.386485757575759, std-0.5030945559548581
+duration: avg-42.52, med-42.67090909090909, std-0.503094555954847
+TTC: [191, 282, 245, 214, 258, 190, 261, 158]
+Average TTC number < 3.0 sec: 224.875000
+
+Main traffic statistics:
+     Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time      Delay      TTC
+0  (Dub_CoTV)                  7.905645          183.911533                42.52  12.235577  224.875
+Statistics of travel time (sec)
+         Dub_CoTV
+count  275.000000
+mean    42.520000
+std     42.030122
+min      1.000000
+25%     19.687500
+50%     28.500000
+75%     44.625000
+max    208.375000
+
+

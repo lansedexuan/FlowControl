@@ -1,0 +1,167 @@
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen CoTV_1x1grid --output_dir output 
+Evaluated files: ['CoTV_1x1grid_20250624-1616131750752973.29504-1-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.593591-7-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.6417944-8-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.3513772-3-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.706546-1-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.7154748-3-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.4022794-8-tripinfo.xml', 'CoTV_1x1grid_20250624-1616131750752973.4022794-5-tripinfo.xml']
+
+---------
+CoTV_1x1grid
+Average finished trip number in this scenario:  70.0
+Average vehicle trip length (m):  613.7
+fuel: avg-8.246106792232128, med-8.250915401894828, std-0.1451384286502653
+CO2: avg-191.83265949654322, med-191.9444510834517, std-3.376434448723685
+delay: avg-7.192023809523809, med-7.172380952380951, std-0.4531599652237865
+duration: avg-48.105357142857144, med-48.08571428571429, std-0.4531599652237968
+TTC: [21, 20, 18, 18, 17, 23, 23, 13]
+Average TTC number < 3.0 sec: 19.125000
+
+Main traffic statistics:
+         Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time     Delay     TTC
+0  (CoTV_1x1grid)                  8.246107          191.832659            48.105357  7.192024  19.125
+Statistics of travel time (sec)
+       CoTV_1x1grid
+count     70.000000
+mean      48.105357
+std        3.530447
+min       43.375000
+25%       45.906250
+50%       47.500000
+75%       49.500000
+max       68.750000
+
+
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen CoTV_1x1grid --output_dir output 
+Evaluated files: ['CoTV_1x1grid_20250624-1653111750755191.9188757-7-tripinfo.xml', 'CoTV_1x1grid_20250624-1653121750755192.0750403-8-tripinfo.xml', 'CoTV_1x1grid_20250624-1653111750755191.0766692-4-tripinfo.xml', 'CoTV_1x1grid_20250624-1653111750755191.1340375-6-tripinfo.xml', 'CoTV_1x1grid_20250624-1653111750755191.7932608-7-tripinfo.xml', 'CoTV_1x1grid_20250624-1653111750755191.261281-8-tripinfo.xml', 'CoTV_1x1grid_20250624-1653111750755191.8606708-5-tripinfo.xml', 'CoTV_1x1grid_20250624-1653111750755191.7932608-2-tripinfo.xml']
+
+---------
+CoTV_1x1grid
+Average finished trip number in this scenario:  70.0
+Average vehicle trip length (m):  613.7
+fuel: avg-8.203981290591027, med-8.250065555529691, std-0.13719674984457683
+CO2: avg-190.85278279114968, med-191.92484268549083, std-3.191714674526357
+delay: avg-7.458095238095237, med-7.422380952380951, std-0.27058138464110704
+duration: avg-48.371428571428574, med-48.33571428571429, std-0.2705813846410823
+TTC: [16, 6, 3, 7, 6, 13, 10, 16]
+Average TTC number < 3.0 sec: 9.625000
+
+Main traffic statistics:
+         Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time     Delay    TTC
+0  (CoTV_1x1grid)                  8.203981          190.852783            48.371429  7.458095  9.625
+Statistics of travel time (sec)
+       CoTV_1x1grid
+count     70.000000
+mean      48.371429
+std        2.730163
+min       43.000000
+25%       46.906250
+50%       48.250000
+75%       50.312500
+max       55.750000
+
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen CoTV_1x1grid --output_dir output 
+Evaluated files: ['CoTV_1x1grid_20250624-2134231750772063.4561598-1-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.0778427-9-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.4561598-2-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.413404-5-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.4561598-8-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.185441-6-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.3123965-2-tripinfo.xml', 'CoTV_1x1grid_20250624-2134231750772063.010695-9-tripinfo.xml']
+
+---------
+CoTV_1x1grid
+Average finished trip number in this scenario:  70.0
+Average vehicle trip length (m):  613.7
+fuel: avg-8.206625699504178, med-8.176299387788355, std-0.1518994485213603
+CO2: avg-190.91433277341477, med-190.2088036892968, std-3.533718789022722
+delay: avg-7.090238095238094, med-7.122380952380952, std-0.42843747906720137
+duration: avg-48.003571428571426, med-48.035714285714285, std-0.42843747906711854
+TTC: [5, 14, 1, 7, 11, 18, 17, 11]
+Average TTC number < 3.0 sec: 10.500000
+
+Main traffic statistics:
+         Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time     Delay   TTC
+0  (CoTV_1x1grid)                  8.206626          190.914333            48.003571  7.090238  10.5
+Statistics of travel time (sec)
+       CoTV_1x1grid
+count     70.000000
+mean      48.003571
+std        2.455304
+min       42.500000
+25%       46.625000
+50%       47.875000
+75%       49.125000
+
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen CoTV_1x1grid --output_dir output
+Evaluated files: ['CoTV_1x1grid_20250626-1535331750923333.4973793-6-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.1982071-6-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.1982071-3-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.80884-4-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.80884-3-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.464843-7-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.4973793-5-tripinfo.xml', 'CoTV_1x1grid_20250626-1535331750923333.613248-5-tripinfo.xml']
+
+---------
+CoTV_1x1grid
+Average finished trip number in this scenario:  70.0
+Average vehicle trip length (m):  613.7
+fuel: avg-8.147581788740428, med-8.111636958495307, std-0.1190661102162472
+CO2: avg-189.5406483504388, med-188.70445449558886, std-2.7699233142396213
+delay: avg-6.783095238095237, med-6.629523809523809, std-0.3425407766579403
+duration: avg-47.69642857142857, med-47.542857142857144, std-0.3425407766580047
+TTC: [6, 4, 11, 4, 7, 24, 10, 10]
+Average TTC number < 3.0 sec: 9.500000
+
+Main traffic statistics:
+         Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time     Delay  TTC
+0  (CoTV_1x1grid)                  8.147582          189.540648            47.696429  6.783095  9.5
+Statistics of travel time (sec)
+       CoTV_1x1grid
+count     70.000000
+mean      47.696429
+std        1.916104
+min       43.625000
+25%       46.281250
+50%       47.437500
+75%       48.875000
+max       52.000000
+
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen CoTV_1x1grid --output_dir output
+Evaluated files: ['CoTV_1x1grid_20250626-1554271750924467.2597847-3-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.4448721-1-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.6661315-5-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.8991363-3-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.764468-1-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.9819765-1-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.6661315-8-tripinfo.xml', 'CoTV_1x1grid_20250626-1554271750924467.4448721-3-tripinfo.xml']
+
+---------
+CoTV_1x1grid
+Average finished trip number in this scenario:  70.0
+Average vehicle trip length (m):  613.7
+fuel: avg-8.226371001128982, med-8.234859942037756, std-0.0827860337663161
+CO2: avg-191.37373054211287, med-191.57123714291532, std-1.9258922942490784
+delay: avg-6.783095238095237, med-6.786666666666666, std-0.3584796410693603
+duration: avg-47.69642857142857, med-47.7, std-0.35847964106937097
+TTC: [10, 10, 3, 4, 8, 10, 17, 9]
+Average TTC number < 3.0 sec: 8.875000
+
+Main traffic statistics:
+         Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time     Delay    TTC
+0  (CoTV_1x1grid)                  8.226371          191.373731            47.696429  6.783095  8.875
+Statistics of travel time (sec)
+       CoTV_1x1grid
+count     70.000000
+mean      47.696429
+std        1.964076
+min       44.000000
+25%       46.250000
+50%       47.687500
+75%       48.875000
+max       54.375000
+
+(flow) dk@DKPC:~/ZYXProjects/CoTV$ python evaluation/getResults.py --scen CoTV_1x1grid --output_dir output
+Evaluated files: ['CoTV_1x1grid_20250626-1951441750938704.7626908-3-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.9041843-7-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.9161272-9-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.749479-2-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.5267699-2-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.71474-4-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.6421227-5-tripinfo.xml', 'CoTV_1x1grid_20250626-1951441750938704.8585033-2-tripinfo.xml']
+
+---------
+CoTV_1x1grid
+Average finished trip number in this scenario:  70.0
+Average vehicle trip length (m):  613.7
+fuel: avg-8.2062937149375, med-8.23851590702763, std-0.13330069986503953
+CO2: avg-190.90651833101913, med-191.65618115085312, std-3.1010896055053454
+delay: avg-6.392023809523809, med-6.286666666666666, std-0.48681270232277973
+duration: avg-47.30535714285714, med-47.2, std-0.48681270232283114
+TTC: [10, 12, 5, 12, 14, 9, 7, 4]
+Average TTC number < 3.0 sec: 9.125000
+
+Main traffic statistics:
+         Scenario  Fuel consumption l/100km  CO2 emission g/1km  Average travel time     Delay    TTC
+0  (CoTV_1x1grid)                  8.206294          190.906518            47.305357  6.392024  9.125
+Statistics of travel time (sec)
+       CoTV_1x1grid
+count     70.000000
+mean      47.305357
+std        2.052265
+min       43.625000
+25%       46.031250
+50%       47.125000
+75%       48.343750
+

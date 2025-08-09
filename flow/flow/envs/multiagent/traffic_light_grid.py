@@ -237,6 +237,7 @@ class CoTV(MultiTrafficLightGridPOEnv):
         # 新增：信号灯切换惩罚相关
         self.last_tl_actions = {tl_id: 0 for tl_id in self.k.traffic_light.get_ids()}
         self.switch_penalty_factor = 0.05  # 可调整参数
+        self.max_pressure = 0.0
         self.light_count=0
         self.vehicle_count=0
 
@@ -481,6 +482,7 @@ class CoTV(MultiTrafficLightGridPOEnv):
             return {}
 
         reward = {}
+        all_pressures = []
         for rl_id in self.k.traffic_light.get_ids():
             obs = self.observation_info[rl_id]
             # 1. pressure
@@ -490,24 +492,40 @@ class CoTV(MultiTrafficLightGridPOEnv):
                                      traffic_start + self.num_local_edges * 2])
             pressure = inc_traffic - out_traffic
 
-            # 新增：信号灯切换惩罚
+            all_pressures.append(pressure)
+            # 计算平均压力作为动态阈值基准
+            avg_pressure = np.mean(all_pressures)
+            # 归一化基准（最大压力取平均压力的2倍，可根据实际情况调整）
+            self.max_pressure = max(self.max_pressure, avg_pressure * 2)
+
+            # 计算当前路口压力并归一化
+            pressure = all_pressures[int(rl_id.split("center")[ID_IDX])]
+            norm_pressure = min(max(pressure / self.max_pressure, 0.0), 1.0)
+
+            # 使用动态阈值（基于全局平均压力）
+            threshold = 0.6 + 0.2 * (avg_pressure / self.max_pressure)  # 阈值范围[0.6,0.8]
+
             current_action = rl_actions.get(rl_id, 0) > 0.0
-            switch_penalty = self.switch_penalty_factor if current_action != self.last_tl_actions[rl_id] else 0
+            # 根据归一化压力和动态阈值调整惩罚
+            if norm_pressure > threshold:
+                switch_penalty = 0  # 压力超过阈值时无惩罚
+            else:
+                # 压力越小，惩罚系数越大（但惩罚上限随全局压力增加而降低）
+                penalty_factor = self.switch_penalty_factor * (1 - norm_pressure) * ( 2 - avg_pressure / self.max_pressure )
+                switch_penalty = penalty_factor  if current_action != self.last_tl_actions[rl_id] else 0
 
-            # 根据交通压力和动作切换状态计算惩罚
-            if pressure > 0.8:
-                # 交通压力过大时，允许自由切换，无惩罚
-                switch_penalty = 0
+            # 新增：信号灯切换惩罚
+            #current_action = rl_actions.get(rl_id, 0) > 0.0
+            #switch_penalty = self.switch_penalty_factor if current_action != self.last_tl_actions[rl_id] else 0
 
-            reward[rl_id] = -pressure - switch_penalty  # 惩罚: 压力 信号切换
-
+            reward[rl_id] = -pressure #-switch_penalty  # 惩罚: 压力 信号切换
 
             '''
             self.light_count+=1
             if self.light_count==3000:
                 # ===== 新增：打印交通灯奖励分量 =====
                 print(f"1 [TL {rl_id}] Pressure: {pressure:.4f}, Switch Penalty: {switch_penalty:.4f}")
-                print(f"1 [TL {rl_id}] Final Reward: {reward[rl_id]:.4f}")
+                print(f"1 [TL {rl_id}] Reward: {reward[rl_id]:.4f}")
                 print("-" * 40)
                 self.light_count=0
             '''
@@ -523,33 +541,34 @@ class CoTV(MultiTrafficLightGridPOEnv):
             accel_penalty = rewards.stable_acceleration_positive_edge(self, veh_ids)
 
             # 新增：碰撞风险惩罚
-            collision_penalty = 0.0  # 初始化碰撞惩罚为0
-            #headway_penalty = 0.0  # 初始化距离惩罚为0
-            #ttc_penalty = 0.0  # 初始化TTC惩罚为0
+            collision_penalty = 0.0
+            decel_risk = 0.0
             lead_id = self.k.vehicle.get_leader(rl_id)
-            '''
-            #原代码
-            if lead_id and lead_id != rl_id:
-                headway = self.k.vehicle.get_headway(rl_id)
-                # 碰撞惩罚优化（原平方项改为指数项）
-                if headway < 2.0:
-                    headway = max(headway, 0.1)
-                    # 原公式：0.1 * (2.0 - headway) ** 2
-                    # 新公式：0.2 * (1 - np.exp(-(2.0 - headway) * 2))
-                    collision_penalty += 0.2 * (1 - np.exp(-(2.0 - headway) * 2))
-            '''
-            # 优化为
             if lead_id and lead_id != rl_id:
                 headway = self.k.vehicle.get_headway(rl_id)
                 ego_speed = self.k.vehicle.get_speed(rl_id)
                 lead_speed = self.k.vehicle.get_speed(lead_id)
+                # 新增：前车加速度（若为负，说明前车在减速）
+                lead_decel = self.k.vehicle.get_accel(lead_id)  # 从之前的代码中获取lead_accel
+
                 # 计算理论安全距离（反应距离 + 制动距离）
-                # 假设反应时间为1秒，减速度为3m/s²（通用安全标准）
                 safe_distance = max(1.0, ego_speed * 1.0 + (ego_speed ** 2) / (2 * 3.0))
                 # 计算相对速度（负值表示接近）
                 rel_speed = lead_speed - ego_speed
 
-                # 风险评估：结合安全距离和相对速度
+                if lead_decel is None:
+                    lead_decel = 0
+                if lead_decel < 0:  # 前车在减速
+                    # 额外增加风险评估，因为前车减速可能导致本车必须更急地减速
+                    # 获取环境参数中的最大减速度（假设self.env_params.additional_params已包含max_decel）
+                    max_decel = self.env_params.additional_params.get("max_decel", 7.5)  # 默认值7.5，与ADDITIONAL_ENV_PARAMS_ACCEL保持一致
+
+                    # 归一化前车减速度（转为正数便于计算）
+                    normalized_decel = min(abs(lead_decel) / max_decel, 1.0)  # 限制在[0,1]
+
+                    # 计算风险值（使用指数函数平滑，避免线性增长）
+                    decel_risk = 1.0 - np.exp(-2 * normalized_decel)  # [0,1]，归一化减速度越大，风险越高
+
                 # 当实际距离 < 安全距离 或 相对速度为负（正在接近）时，计算风险
                 if headway < safe_distance or rel_speed < 0:
                     # 计算TTC（碰撞时间），避免除以零
@@ -557,37 +576,22 @@ class CoTV(MultiTrafficLightGridPOEnv):
 
                     # 归一化风险分数：距离越近、TTC越小，风险越高
                     distance_risk = 1 - min(headway / safe_distance, 1.0)  # [0,1]
-                    ttc_risk = 1 - np.exp(-ttc)  # [0,1]，TTC越小风险越高
+                    ttc_risk = np.exp(-ttc)  # [0,1]，TTC越大风险越低
 
                     # 综合风险：同时考虑距离和TTC
-                    combined_risk = max(distance_risk, ttc_risk)
+                    combined_risk = max(distance_risk, ttc_risk, decel_risk)
 
                     # 平滑惩罚：使用指数函数放大高风险区域
-                    # 改进：移除了多个超参数，仅保留指数底数2（对结果影响较小）
                     collision_penalty = 1.0 - np.exp(-2 * combined_risk)  # [0,1]
 
-            # 计算速度匹配奖励（越接近target_speed奖励越高）
-            current_speed = self.k.vehicle.get_speed(rl_id)
-            speed_diff = abs(current_speed - self.target_speed)
-            speed_reward = -speed_diff / self.target_speed  # 标准化到[-1, 0]
-
-
-            #最大化接近目标速度 最小化加速度变化
-            # 改进：简化了奖励计算，移除了headway_penalty和ttc_penalty的单独计算
-            reward[rl_id] = delay_reward - accel_penalty - collision_penalty + speed_reward
-            #reward[rl_id] = delay_reward - accel_penalty - collision_penalty + speed_reward
-
-            #最大化接近目标速度 最小化加速度变化
-            #reward[rl_id] = delay_reward - accel_penalty
-            #reward[rl_id] = rewards.min_delay_edge(self, veh_ids, self.target_speed) - 1 \
-            #   - rewards.stable_acceleration_positive_edge(self, veh_ids)
+            reward[rl_id] = delay_reward - accel_penalty #- collision_penalty
 
             '''
             self.vehicle_count+=1
             if self.vehicle_count==3000:
                 # ===== 新增：打印CAV奖励分量 =====
-                print(f"2 [CAV {rl_id}] Delay Reward: {delay_reward:.4f}, Accel Reward: {accel_penalty:.4f}")
-                print(f"2 [CAV {rl_id}] HeadwayPen: {collision_penalty:.4f}, TTCPen: {speed_reward:.4f}")
+                print(f"2 [CAV {rl_id}] Delay Reward: {delay_reward:.4f}, Accel Penalty: {accel_penalty:.4f}")
+                print(f"2 [CAV {rl_id}] Collision Penalty: : {collision_penalty:.4f}")
                 print(f"2 [CAV {rl_id}] Final Reward: {reward[rl_id]:.4f}")
                 print("-" * 40)
                 self.vehicle_count=0
